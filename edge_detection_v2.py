@@ -25,20 +25,24 @@ else:
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Aplicar filtro de mediana para reduzir ruído
-    median_blurred = cv2.medianBlur(gray, 7)  # Ajuste o tamanho do kernel se necessário
+    # median_blurred = cv2.medianBlur(gray, 7)
 
     # Aplicar filtro Gaussian para suavizar ainda mais a imagem
-    blurred = cv2.GaussianBlur(median_blurred, (7, 7), 0)
+    blurred = cv2.GaussianBlur(gray, (7, 7), 0)
+
+    # Aplicar operação morfológica (closing) para remover pequenos buracos e sombras
+    kernel = np.ones((5, 5), np.uint8)
+    morphed = cv2.morphologyEx(blurred, cv2.MORPH_CLOSE, kernel)
 
     # Detectar as bordas usando Canny
-    edges = cv2.Canny(blurred, 50, 150, apertureSize=3, L2gradient=True)
+    edges = cv2.Canny(morphed, 50, 150, apertureSize=3, L2gradient=True)
 
     # Aplicar dilatação para fechar pequenas lacunas nas bordas
-    kernel = np.ones((3,3), np.uint8)
-    dilated = cv2.dilate(edges, kernel, iterations=1)
+    kernel = np.ones((3, 3), np.uint8)
+    dilated = cv2.dilate(edges, kernel, iterations=2)  # Aumentar a iteração para fechar mais lacunas
 
     # Aplicar Transformada de Hough para detectar as linhas
-    lines = cv2.HoughLinesP(dilated, 1, np.pi / 180, threshold=100, minLineLength=150, maxLineGap=50)
+    lines = cv2.HoughLinesP(dilated, 1, np.pi / 180, threshold=100, minLineLength=100, maxLineGap=20)
 
     # Verificar se linhas foram detectadas
     if lines is not None:
@@ -51,10 +55,10 @@ else:
     cv2.imshow("output", gray)
     wait_key()
 
-    cv2.imshow("output", median_blurred)
+    cv2.imshow("output", blurred)
     wait_key()
 
-    cv2.imshow("output", blurred)
+    cv2.imshow("output", morphed)
     wait_key()
 
     cv2.imshow("output", edges)
