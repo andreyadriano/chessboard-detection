@@ -4,7 +4,7 @@ import argparse
 
 def wait_key():
     # Esperar por uma tecla ou fechar a janela após 30 segundos
-    if cv2.waitKey(30000) & 0xFF == ord('q'):
+    if cv2.waitKey(0) & 0xFF == ord('q'):
         pass
 
 # Configurar o parser de argumentos
