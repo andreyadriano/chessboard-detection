@@ -51,7 +51,6 @@ def calculate_angle(line1, line2):
 
 def line_intersection(line1, line2):
     angle = calculate_angle(line1, line2)
-    print(angle)
     
     # Verifique se o ângulo está próximo de 90 graus
     if angle is not None and (angle < 80 or angle > 100):
@@ -110,7 +109,7 @@ lines = cv2.HoughLinesP(dilated, 1, np.pi / 180, threshold=100, minLineLength=20
 
 # Encontrar quadriláteros
 if lines is not None:
-    quadrilateros = []
+    intersections = []
     # Extrapolar linhas e armazenar
     extrapolated_lines = []
     for line in lines:
@@ -123,13 +122,13 @@ if lines is not None:
         for j in range(i + 1, len(extrapolated_lines)):
             intersection = line_intersection(extrapolated_lines[i], extrapolated_lines[j])
             if intersection is not None:
-                quadrilateros.append(intersection)
+                intersections.append(intersection)
 
-    # Desenhar quadriláteros na imagem original
-    for point in quadrilateros:
-        cv2.circle(img, point, 5, (0, 0, 255), -1)  # Desenhar ponto vermelho
+    # Desenhar interseções na imagem original
+    for intersection in intersections:
+        cv2.circle(img, intersection, 5, (0, 0, 255), -1)  # Desenhar ponto vermelho para representar intersecção
 
-# Mostrar a imagem original com quadriláteros
+# Mostrar a imagem original com intersecções
 cv2.imshow("output", img)
 wait_key()
 cv2.destroyAllWindows()
