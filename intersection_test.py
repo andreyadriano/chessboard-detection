@@ -8,8 +8,6 @@ def wait_key():
 
 def extrapolate_line(x1, y1, x2, y2, img_shape):
     height, width = img_shape[:2]
-
-    # Calcular coeficiente angular e linear
     if x2 - x1 != 0:
         slope = (y2 - y1) / (x2 - x1)
         intercept = y1 - slope * x1
@@ -23,9 +21,42 @@ def extrapolate_line(x1, y1, x2, y2, img_shape):
         y_max = int(slope * width + intercept)  # Interseção direita
         return 0, y0, width, y_max
     else:
-        return x1, 0, x2, height  # Linha vertical
+        return x1, 0, x2, height # Linha vertical
+
+def calculate_angle(line1, line2):
+    # Vetores de direção das linhas
+    dx1, dy1 = line1[2] - line1[0], line1[3] - line1[1]
+    dx2, dy2 = line2[2] - line2[0], line2[3] - line2[1]
+    
+    # Calcular o produto escalar
+    dot_product = dx1 * dx2 + dy1 * dy2
+    # Calcular a magnitude dos vetores
+    mag1 = np.sqrt(dx1**2 + dy1**2)
+    mag2 = np.sqrt(dx2**2 + dy2**2)
+    
+    # Evitar divisão por zero
+    if mag1 == 0 or mag2 == 0:
+        return None
+    
+    # Calcular o cosseno do ângulo
+    cos_angle = dot_product / (mag1 * mag2)
+
+    # Garantir que o valor de cos_angle esteja no intervalo [-1, 1]
+    cos_angle = np.clip(cos_angle, -1.0, 1.0)
+    
+    # Calcular o ângulo em graus
+    angle = np.arccos(cos_angle) * (180.0 / np.pi)
+    
+    return angle
 
 def line_intersection(line1, line2):
+    angle = calculate_angle(line1, line2)
+    print(angle)
+    
+    # Verifique se o ângulo está próximo de 90 graus
+    if angle is not None and (angle < 80 or angle > 100):
+        return None  # Não é um ângulo próximo de 90 graus
+
     x1, y1, x2, y2 = line1
     x3, y3, x4, y4 = line2
 
@@ -48,6 +79,7 @@ def line_intersection(line1, line2):
         return int(x), int(y)
     except OverflowError:
         return None
+
 
 # Configurar o parser de argumentos
 parser = argparse.ArgumentParser(description="Detecção de linhas em uma imagem de tabuleiro de xadrez.")
