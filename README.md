@@ -24,5 +24,5 @@ pip install opencv-python
 
 After activating the python virtual environment, you can run the script using the following command:
 ```
-python3 chessboard_detection.py <IMAGE_NAME>
+python3 intersection_detection.py <IMAGE_NAME>
 ```
