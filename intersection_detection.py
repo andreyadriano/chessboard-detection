@@ -53,7 +53,7 @@ def line_intersection(line1, line2):
     angle = calculate_angle(line1, line2)
     
     # Verifique se o ângulo está próximo de 90 graus
-    if angle is not None and (angle < 80 or angle > 100):
+    if angle is not None and (angle < 85 or angle > 95):
         return None  # Não é um ângulo próximo de 90 graus
 
     x1, y1, x2, y2 = line1
