@@ -21,40 +21,29 @@ def extrapolate_line(x1, y1, x2, y2, img_shape):
         y_max = int(slope * width + intercept)  # Interseção direita
         return 0, y0, width, y_max
     else:
-        return x1, 0, x2, height # Linha vertical
+        return x1, 0, x2, height  # Linha vertical
 
 def calculate_angle(line1, line2):
-    # Vetores de direção das linhas
     dx1, dy1 = line1[2] - line1[0], line1[3] - line1[1]
     dx2, dy2 = line2[2] - line2[0], line2[3] - line2[1]
-    
-    # Calcular o produto escalar
+
     dot_product = dx1 * dx2 + dy1 * dy2
-    # Calcular a magnitude dos vetores
     mag1 = np.sqrt(dx1**2 + dy1**2)
     mag2 = np.sqrt(dx2**2 + dy2**2)
-    
-    # Evitar divisão por zero
+
     if mag1 == 0 or mag2 == 0:
         return None
-    
-    # Calcular o cosseno do ângulo
-    cos_angle = dot_product / (mag1 * mag2)
 
-    # Garantir que o valor de cos_angle esteja no intervalo [-1, 1]
+    cos_angle = dot_product / (mag1 * mag2)
     cos_angle = np.clip(cos_angle, -1.0, 1.0)
-    
-    # Calcular o ângulo em graus
     angle = np.arccos(cos_angle) * (180.0 / np.pi)
-    
+
     return angle
 
 def line_intersection(line1, line2):
     angle = calculate_angle(line1, line2)
-    
-    # Verifique se o ângulo está próximo de 90 graus
     if angle is not None and (angle < 85 or angle > 95):
-        return None  # Não é um ângulo próximo de 90 graus
+        return None
 
     x1, y1, x2, y2 = line1
     x3, y3, x4, y4 = line2
@@ -70,7 +59,7 @@ def line_intersection(line1, line2):
     determinant = A1 * B2 - A2 * B1
 
     if abs(determinant) < 1e-10:
-        return None  # Linhas quase paralelas
+        return None
 
     try:
         x = (B2 * C1 - B1 * C2) / determinant
@@ -79,6 +68,35 @@ def line_intersection(line1, line2):
     except OverflowError:
         return None
 
+# Função para calcular o tamanho da imagem baseada nos 4 pontos
+def calculate_image_size(rect):
+    # Calcular a largura e a altura com base nas distâncias entre os pontos
+    width_top = np.linalg.norm(rect[0] - rect[1])
+    width_bottom = np.linalg.norm(rect[2] - rect[3])
+    height_left = np.linalg.norm(rect[0] - rect[3])
+    height_right = np.linalg.norm(rect[1] - rect[2])
+
+    # Largura e altura médias
+    width = int((width_top + width_bottom) / 2)
+    height = int((height_left + height_right) / 2)
+
+    return width, height
+
+# Função para aplicar a transformada de perspectiva
+def apply_perspective_transform(img, corners):
+    # Calcular o tamanho da nova imagem
+    width, height = calculate_image_size(corners)
+
+    # Definir os pontos de destino para a transformação
+    dst_points = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype='float32')
+
+    # Obter a matriz de transformação de perspectiva
+    M = cv2.getPerspectiveTransform(corners, dst_points)
+
+    # Aplicar a transformação de perspectiva
+    warped = cv2.warpPerspective(img, M, (width, height))
+
+    return warped
 
 # Configurar o parser de argumentos
 parser = argparse.ArgumentParser(description="Detecção de linhas em uma imagem de tabuleiro de xadrez.")
@@ -107,28 +125,41 @@ dilated = cv2.dilate(edges, kernel, iterations=2)
 # Detectar linhas
 lines = cv2.HoughLinesP(dilated, 1, np.pi / 180, threshold=100, minLineLength=200, maxLineGap=20)
 
-# Encontrar quadriláteros
+# Encontrar interseções
 if lines is not None:
     intersections = []
-    # Extrapolar linhas e armazenar
     extrapolated_lines = []
     for line in lines:
         x1, y1, x2, y2 = line[0]
         x1_ext, y1_ext, x2_ext, y2_ext = extrapolate_line(x1, y1, x2, y2, img.shape)
         extrapolated_lines.append((x1_ext, y1_ext, x2_ext, y2_ext))
 
-    # Checar interseções entre linhas extrapoladas
     for i in range(len(extrapolated_lines)):
         for j in range(i + 1, len(extrapolated_lines)):
             intersection = line_intersection(extrapolated_lines[i], extrapolated_lines[j])
             if intersection is not None:
                 intersections.append(intersection)
 
-    # Desenhar interseções na imagem original
-    for intersection in intersections:
-        cv2.circle(img, intersection, 5, (0, 0, 255), -1)  # Desenhar ponto vermelho para representar intersecção
+    intersections = np.array(intersections)
 
-# Mostrar a imagem original com intersecções
-cv2.imshow("output", img)
-wait_key()
+    if len(intersections) >= 4:
+        hull = cv2.convexHull(intersections)
+
+        if len(hull) >= 4:
+            hull = np.squeeze(hull)
+            rect = np.zeros((4, 2), dtype='float32')
+
+            s = hull.sum(axis=1)
+            rect[0] = hull[np.argmin(s)]  # top-left
+            rect[2] = hull[np.argmax(s)]  # bottom-right
+
+            diff = np.diff(hull, axis=1)
+            rect[1] = hull[np.argmin(diff)]  # top-right
+            rect[3] = hull[np.argmax(diff)]  # bottom-left
+
+            warped = apply_perspective_transform(img, rect)
+
+            cv2.imshow("output", warped)
+            wait_key()
+
 cv2.destroyAllWindows()
