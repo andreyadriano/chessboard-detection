@@ -63,27 +63,6 @@ def line_intersection(line1, line2):
                 return None
     return None
 
-def calculate_image_size(rect):
-    """Calcula as dimensões da imagem com base nos 4 pontos extremos."""
-    width_top = np.linalg.norm(rect[0] - rect[1])
-    width_bottom = np.linalg.norm(rect[2] - rect[3])
-    height_left = np.linalg.norm(rect[0] - rect[3])
-    height_right = np.linalg.norm(rect[1] - rect[2])
-
-    width = int((width_top + width_bottom) / 2)
-    height = int((height_left + height_right) / 2)
-
-    return width, height
-
-def apply_perspective_transform(img, corners):
-    """Aplica a transformada de perspectiva na imagem."""
-    width, height = calculate_image_size(corners)
-    
-    dst_points = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype='float32')
-    M = cv2.getPerspectiveTransform(corners, dst_points)
-    
-    return cv2.warpPerspective(img, M, (width, height))
-
 def detect_intersections(lines, img_shape):
     """Detecta interseções entre as linhas detectadas."""
     intersections = []
@@ -116,8 +95,30 @@ def find_extreme_points(intersections):
 
     return rect
 
+def calculate_image_size(rect):
+    """Calcula as dimensões da imagem com base nos 4 pontos extremos."""
+    width_top = np.linalg.norm(rect[0] - rect[1])
+    width_bottom = np.linalg.norm(rect[2] - rect[3])
+    height_left = np.linalg.norm(rect[0] - rect[3])
+    height_right = np.linalg.norm(rect[1] - rect[2])
+
+    width = int((width_top + width_bottom) / 2)
+    height = int((height_left + height_right) / 2)
+
+    return width, height
+
+def apply_perspective_transform(img, corners):
+    """Aplica a transformada de perspectiva na imagem."""
+    width, height = calculate_image_size(corners)
+    
+    dst_points = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype='float32')
+    M = cv2.getPerspectiveTransform(corners, dst_points)
+    
+    return cv2.warpPerspective(img, M, (width, height))
+
 def process_image(img):
     """Processa a imagem, detecta linhas e interseções, e aplica a transformada de perspectiva."""
+    # Gray scale -> Median blur -> Canny edge detection -> Hough Transform -> Intersections -> Perspective Transform
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     median_blurred = cv2.medianBlur(gray, 7)
     edges = cv2.Canny(median_blurred, 30, 120, apertureSize=3, L2gradient=True)
