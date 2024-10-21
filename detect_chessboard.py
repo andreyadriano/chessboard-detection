@@ -3,31 +3,31 @@ import numpy as np
 import argparse
 
 def wait_key():
-    """Espera a tecla 'q' ser pressionada para fechar as janelas."""
+    """Waits for the 'q' key to be pressed to close the windows."""
     if cv2.waitKey(0) & 0xFF == ord('q'):
         pass
 
 def load_image(image_path):
     img = cv2.imread(image_path)
     if img is None:
-        raise ValueError(f"Erro: Não foi possível carregar a imagem '{image_path}'.")
+        raise ValueError(f"Error: Could not load image '{image_path}'.")
     return img
 
 def extrapolate_line(x1, y1, x2, y2, img_shape):
-    """Extrapola uma linha até as bordas da imagem."""
+    """Extrapolates a line to the edges of the image."""
     height, width = img_shape[:2]
     
     if x2 - x1 != 0:
         slope = (y2 - y1) / (x2 - x1)
         intercept = y1 - slope * x1
-        y0 = int(slope * 0 + intercept)  # Interseção esquerda
-        y_max = int(slope * width + intercept)  # Interseção direita
+        y0 = int(slope * 0 + intercept)  # Left intersection
+        y_max = int(slope * width + intercept)  # Right intersection
         return 0, y0, width, y_max
     else:
-        return x1, 0, x2, height  # Linha vertical
+        return x1, 0, x2, height  # Vertical line
 
 def calculate_angle(line1, line2):
-    """Calcula o ângulo entre duas linhas."""
+    """Calculates the angle between two lines."""
     dx1, dy1 = line1[2] - line1[0], line1[3] - line1[1]
     dx2, dy2 = line2[2] - line2[0], line2[3] - line2[1]
 
@@ -42,7 +42,7 @@ def calculate_angle(line1, line2):
     return np.arccos(cos_angle) * (180.0 / np.pi)
 
 def line_intersection(line1, line2):
-    """Encontra a interseção de duas linhas se formarem um ângulo próximo de 90º."""
+    """Finds the intersection of two lines if they form an angle close to 90 degrees."""
     angle = calculate_angle(line1, line2)
     
     if angle is None or (85 <= angle <= 95):
@@ -64,7 +64,7 @@ def line_intersection(line1, line2):
     return None
 
 def detect_intersections(lines, img_shape):
-    """Detecta interseções entre as linhas detectadas."""
+    """Detects intersections between detected lines."""
     intersections = []
     extrapolated_lines = [extrapolate_line(*line[0], img_shape) for line in lines]
 
@@ -77,10 +77,10 @@ def detect_intersections(lines, img_shape):
     return np.array(intersections)
 
 def find_extreme_points(intersections):
-    """Encontra os 4 pontos extremos do tabuleiro usando o Convex Hull."""
+    """Finds the 4 extreme points of the chessboard using the Convex Hull."""
     hull = cv2.convexHull(intersections)
     if len(hull) < 4:
-        raise ValueError("Convex Hull não tem pontos suficientes para calcular os extremos.")
+        raise ValueError("Convex Hull does not have enough points to calculate the extremes.")
 
     hull = np.squeeze(hull)
     rect = np.zeros((4, 2), dtype='float32')
@@ -96,7 +96,7 @@ def find_extreme_points(intersections):
     return rect
 
 def calculate_image_size(rect):
-    """Calcula as dimensões da imagem com base nos 4 pontos extremos."""
+    """Calculates the image dimensions based on the 4 extreme points."""
     width_top = np.linalg.norm(rect[0] - rect[1])
     width_bottom = np.linalg.norm(rect[2] - rect[3])
     height_left = np.linalg.norm(rect[0] - rect[3])
@@ -108,7 +108,7 @@ def calculate_image_size(rect):
     return width, height
 
 def apply_perspective_transform(img, corners):
-    """Aplica a transformada de perspectiva na imagem."""
+    """Applies perspective transformation to the image."""
     width, height = calculate_image_size(corners)
     
     dst_points = np.array([[0, 0], [width - 1, 0], [width - 1, height - 1], [0, height - 1]], dtype='float32')
@@ -117,7 +117,7 @@ def apply_perspective_transform(img, corners):
     return cv2.warpPerspective(img, M, (width, height))
 
 def process_image(img):
-    """Processa a imagem, detecta linhas e interseções, e aplica a transformada de perspectiva."""
+    """Processes the image, detects lines and intersections, and applies perspective transformation."""
     # Gray scale -> Median blur -> Canny edge detection -> Hough Transform -> Intersections -> Perspective Transform
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     median_blurred = cv2.medianBlur(gray, 7)
@@ -128,23 +128,23 @@ def process_image(img):
 
     lines = cv2.HoughLinesP(dilated, 1, np.pi / 180, threshold=100, minLineLength=200, maxLineGap=20)
     if lines is None:
-        raise ValueError("Nenhuma linha detectada na imagem.")
+        raise ValueError("No lines detected in the image.")
 
     intersections = detect_intersections(lines, img.shape)
 
     if len(intersections) < 4:
-        raise ValueError("Menos de 4 interseções encontradas. Não é possível continuar.")
+        raise ValueError("Less than 4 intersections found. Cannot proceed.")
 
     rect = find_extreme_points(intersections)
     warped = apply_perspective_transform(img, rect)
 
-    # Descomente as linhas abaixo para visualizar a imagem de saída.
+    # Uncomment the lines below to visualize the output image.
     # cv2.namedWindow("output", cv2.WINDOW_NORMAL)
     # cv2.imshow("output", warped)
     # wait_key()
     # cv2.destroyAllWindows()
 
-    # Descomente as linhas abaixo para salvar imagens de exemplo
+    # Uncomment the lines below to save example images
     # cv2.imwrite("./examples/original.jpg", img)
     # cv2.imwrite("./examples/gray.jpg", gray)
     # cv2.imwrite("./examples/median_blurred.jpg", median_blurred)
@@ -157,16 +157,16 @@ def process_image(img):
 
 def save_image(img, output_path):
     cv2.imwrite(output_path, img)
-    print(f"Imagem de saída salva em '{output_path}'.")
+    print(f"Output image saved to '{output_path}'.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Detecção de linhas em uma imagem de tabuleiro de xadrez.")
-    parser.add_argument("imagem_caminho", type=str, help="Caminho para a imagem do tabuleiro de xadrez.")
-    parser.add_argument("saida_caminho", type=str, help="Caminho para salvar a imagem de saída.")
+    parser = argparse.ArgumentParser(description="Line detection in a chessboard image.")
+    parser.add_argument("image_path", type=str, help="Path to the chessboard image.")
+    parser.add_argument("output_path", type=str, help="Path to save the output image.")
     args = parser.parse_args()
 
-    image_path = args.imagem_caminho
-    output_path = args.saida_caminho
+    image_path = args.image_path
+    output_path = args.output_path
 
     img = load_image(image_path)
     output = process_image(img)
