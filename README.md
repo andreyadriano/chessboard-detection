@@ -1,7 +1,9 @@
 # Chessboard detection
 An approach using image processing and computer vision techniques
 
-:warning: STILL UNDER DEVELOPMENT
+## How does it work?
+
+`TODO`
 
 ## How to setup environment
 
@@ -24,5 +26,5 @@ pip install opencv-python
 
 After activating the python virtual environment, you can run the script using the following command:
 ```
-python3 intersection_detection.py <IMAGE_NAME>
+python3 detect_chessboard.py <IMAGE_NAME> <OUTPUT_PATH>
 ```
