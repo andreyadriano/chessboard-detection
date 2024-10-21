@@ -144,6 +144,15 @@ def process_image(img):
     # wait_key()
     # cv2.destroyAllWindows()
 
+    # Descomente as linhas abaixo para salvar imagens de exemplo
+    # cv2.imwrite("./examples/original.jpg", img)
+    # cv2.imwrite("./examples/gray.jpg", gray)
+    # cv2.imwrite("./examples/median_blurred.jpg", median_blurred)
+    # cv2.imwrite("./examples/edges.jpg", edges)
+    # cv2.imwrite("./examples/dilated.jpg", dilated)
+    # cv2.imwrite("./examples/extrapolated_lines.jpg", img)
+    # cv2.imwrite("./examples/warped.jpg", warped)
+
     return warped
 
 def save_image(img, output_path):
