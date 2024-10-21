@@ -7,6 +7,12 @@ def wait_key():
     if cv2.waitKey(0) & 0xFF == ord('q'):
         pass
 
+def load_image(image_path):
+    img = cv2.imread(image_path)
+    if img is None:
+        raise ValueError(f"Erro: Não foi possível carregar a imagem '{image_path}'.")
+    return img
+
 def extrapolate_line(x1, y1, x2, y2, img_shape):
     """Extrapola uma linha até as bordas da imagem."""
     height, width = img_shape[:2]
@@ -78,35 +84,6 @@ def apply_perspective_transform(img, corners):
     
     return cv2.warpPerspective(img, M, (width, height))
 
-def process_image(image_path):
-    """Processa a imagem, detecta linhas e interseções, e aplica a transformada de perspectiva."""
-    img = cv2.imread(image_path)
-    if img is None:
-        raise ValueError(f"Erro: Não foi possível carregar a imagem '{image_path}'")
-
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    median_blurred = cv2.medianBlur(gray, 7)
-    edges = cv2.Canny(median_blurred, 30, 120, apertureSize=3, L2gradient=True)
-
-    kernel = np.ones((3, 3), np.uint8)
-    dilated = cv2.dilate(edges, kernel, iterations=2)
-
-    lines = cv2.HoughLinesP(dilated, 1, np.pi / 180, threshold=100, minLineLength=200, maxLineGap=20)
-    if lines is None:
-        raise ValueError("Nenhuma linha detectada na imagem.")
-
-    intersections = detect_intersections(lines, img.shape)
-
-    if len(intersections) < 4:
-        raise ValueError("Menos de 4 interseções encontradas. Não é possível continuar.")
-
-    rect = find_extreme_points(intersections)
-    warped = apply_perspective_transform(img, rect)
-
-    cv2.namedWindow("output", cv2.WINDOW_NORMAL)
-    cv2.imshow("output", warped)
-    wait_key()
-
 def detect_intersections(lines, img_shape):
     """Detecta interseções entre as linhas detectadas."""
     intersections = []
@@ -139,10 +116,48 @@ def find_extreme_points(intersections):
 
     return rect
 
+def process_image(img):
+    """Processa a imagem, detecta linhas e interseções, e aplica a transformada de perspectiva."""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    median_blurred = cv2.medianBlur(gray, 7)
+    edges = cv2.Canny(median_blurred, 30, 120, apertureSize=3, L2gradient=True)
+
+    kernel = np.ones((3, 3), np.uint8)
+    dilated = cv2.dilate(edges, kernel, iterations=2)
+
+    lines = cv2.HoughLinesP(dilated, 1, np.pi / 180, threshold=100, minLineLength=200, maxLineGap=20)
+    if lines is None:
+        raise ValueError("Nenhuma linha detectada na imagem.")
+
+    intersections = detect_intersections(lines, img.shape)
+
+    if len(intersections) < 4:
+        raise ValueError("Menos de 4 interseções encontradas. Não é possível continuar.")
+
+    rect = find_extreme_points(intersections)
+    warped = apply_perspective_transform(img, rect)
+
+    # Descomente as linhas abaixo para visualizar a imagem de saída.
+    # cv2.namedWindow("output", cv2.WINDOW_NORMAL)
+    # cv2.imshow("output", warped)
+    # wait_key()
+    # cv2.destroyAllWindows()
+
+    return warped
+
+def save_image(img, output_path):
+    cv2.imwrite(output_path, img)
+    print(f"Imagem de saída salva em '{output_path}'.")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Detecção de linhas em uma imagem de tabuleiro de xadrez.")
     parser.add_argument("imagem_caminho", type=str, help="Caminho para a imagem do tabuleiro de xadrez.")
+    parser.add_argument("saida_caminho", type=str, help="Caminho para salvar a imagem de saída.")
     args = parser.parse_args()
 
-    process_image(args.imagem_caminho)
-    cv2.destroyAllWindows()
+    image_path = args.imagem_caminho
+    output_path = args.saida_caminho
+
+    img = load_image(image_path)
+    output = process_image(img)
+    save_image(output, output_path)
