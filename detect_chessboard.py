@@ -138,21 +138,6 @@ def process_image(img):
     rect = find_extreme_points(intersections)
     warped = apply_perspective_transform(img, rect)
 
-    # Uncomment the lines below to visualize the output image.
-    # cv2.namedWindow("output", cv2.WINDOW_NORMAL)
-    # cv2.imshow("output", warped)
-    # wait_key()
-    # cv2.destroyAllWindows()
-
-    # Uncomment the lines below to save example images
-    # cv2.imwrite("./examples/original.jpg", img)
-    # cv2.imwrite("./examples/gray.jpg", gray)
-    # cv2.imwrite("./examples/median_blurred.jpg", median_blurred)
-    # cv2.imwrite("./examples/edges.jpg", edges)
-    # cv2.imwrite("./examples/dilated.jpg", dilated)
-    # cv2.imwrite("./examples/extrapolated_lines.jpg", img)
-    # cv2.imwrite("./examples/warped.jpg", warped)
-
     return warped
 
 def save_image(img, output_path):
