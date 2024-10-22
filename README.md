@@ -1,6 +1,8 @@
 # Chessboard detection
 An approach using image processing and computer vision techniques
 
+> :warning: The scripts were only tested on Ubuntu 24.04 LTS and should only work on Linux distributions.
+
 ## How does it work?
 
 `TODO`
@@ -32,6 +34,8 @@ python3 detect_chessboard.py <IMAGE_NAME> <OUTPUT_PATH>
 ### For multiple jpg images
 
 If you want to run the script for many jpg images in a row, you can use the `run_detect_chessboard_for_all.sh` script, which will do it for all jpg images in an input path given as argument and save it in the output path.
+
+> :warning: Keep in mind this script was written for jpg images only. If you have any other image extension, you will need to edit the script.
 
 First, you need permission for running the script:
 ```
