@@ -1,5 +1,5 @@
 # Chessboard detection
-An approach using image processing and computer vision techniques
+An approach using image processing and computer vision techniques. It only works well on a clear background, with not many lines or light reflections. Feel free to use and modify this code, but I'd like to know if you improved it somehow!
 
 > :warning: The scripts were only tested on Ubuntu 24.04 LTS and should only work on Linux distributions.
 
