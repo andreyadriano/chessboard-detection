@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Função de ajuda para exibir o uso correto
+# Help function to display correct usage
 usage() {
-  echo "Uso: $0 -i <input_directory> -o <output_directory>"
+  echo "Usage: $0 -i <input_directory> -o <output_directory>"
   exit 1
 }
 
-# Verifica se o número de argumentos é correto
+# Checks if the number of arguments is correct
 if [ "$#" -ne 4 ]; then
   usage
 fi
 
-# Variáveis para armazenar os diretórios de entrada e saída
+# Variables to store input and output directories
 while getopts "i:o:" opt; do
   case "$opt" in
     i) input_dir="$OPTARG" ;;
@@ -20,35 +20,35 @@ while getopts "i:o:" opt; do
   esac
 done
 
-# Verifica se os diretórios existem
+# Checks if the directories exist
 if [ ! -d "$input_dir" ]; then
-  echo "Erro: Diretório de entrada '$input_dir' não encontrado."
+  echo "Error: Input directory '$input_dir' not found."
   exit 1
 fi
 
 if [ ! -d "$output_dir" ]; then
-  echo "Erro: Diretório de saída '$output_dir' não encontrado."
+  echo "Error: Output directory '$output_dir' not found."
   exit 1
 fi
 
-# Itera sobre todos os arquivos .jpg no diretório de entrada
+# Iterate over all .jpg files in the input directory
 for img_file in "$input_dir"/*.jpg; do
-  # Obtém o nome do arquivo sem o diretório (somente o nome)
+  # Get the file name without the directory (only the name)
   img_name=$(basename "$img_file")
 
-  # Cria o caminho completo do arquivo de saída no diretório de saída
+  # Create the full output file path in the output directory
   output_file="$output_dir/$img_name"
 
-  # Executa o script Python para o arquivo atual
-  echo "Processando $img_file..."
+  # Run the Python script for the current file
+  echo "Processing $img_file..."
   python3 detect_chessboard.py "$img_file" "$output_file"
 
-  # Verifica se a execução foi bem-sucedida
+  # Check if the execution was successful
   if [ $? -ne 0 ]; then
-    echo "Erro ao processar $img_file"
+    echo "Error processing $img_file"
   else
-    echo "Arquivo de saída salvo em $output_file"
+    echo "Output file saved to $output_file"
   fi
 done
 
-echo "Processamento concluído."
+echo "Processing complete."

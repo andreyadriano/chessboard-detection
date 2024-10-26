@@ -1,27 +1,26 @@
 #!/bin/bash
 
-# Verificar se o número inicial foi passado como argumento
+# Check if the starting number was passed as an argument
 if [ -z "$1" ]; then
-  echo "Uso: $0 <número_inicial>"
+  echo "Usage: $0 <starting_number>"
   exit 1
 fi
 
-# Armazenar o número inicial fornecido
-contador=$1
+# Store the provided starting number
+counter=$1
 
-# Loop para percorrer os arquivos no diretório atual que seguem o formato YYYYMMDD_hhmmss.*
-# Ordenados pelo nome do arquivo (o que corresponde à ordem cronológica)
+# Loop through the files in the current directory that follow the format YYYYMMDD_hhmmss.*
+# Sorted by file name (which corresponds to chronological order)
 for file in $(ls -1 | grep -E '^[0-9]{8}_[0-9]{6}' | sort); do
-  # Extrair a extensão do arquivo
-  extensao="${file##*.}"
+  # Extract the file extension
+  extension="${file##*.}"
 
-  # Criar o novo nome com o número incrementado
-  novo_nome=$(printf "%04d.%s" $contador $extensao)
+  # Create the new name with the incremented number
+  new_name=$(printf "%04d.%s" $counter $extension)
 
-  # Renomear o arquivo
-  mv "$file" "$novo_nome"
+  # Rename the file
+  mv "$file" "$new_name"
 
-  # Incrementar o contador
-  contador=$((contador + 1))
+  # Increment the counter
+  counter=$((counter + 1))
 done
-
