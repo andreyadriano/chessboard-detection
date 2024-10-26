@@ -2,15 +2,21 @@ import cv2
 import numpy as np
 import argparse
 
-def wait_key():
-    """Waits for the 'q' key to be pressed to close the windows."""
-    if cv2.waitKey(0) & 0xFF == ord('q'):
-        pass
+# Global variable to show images step-by-step
+show_images = False
+
+def show_image(img, title="output"):
+    """Displays an image in a resizable window until any key is pressed."""
+    if show_images:
+        cv2.namedWindow(title, cv2.WINDOW_NORMAL)
+        cv2.imshow(title, img)
+        cv2.waitKey(0)
 
 def load_image(image_path):
     img = cv2.imread(image_path)
     if img is None:
         raise ValueError(f"Error: Could not load image '{image_path}'.")
+    show_image(img)
     return img
 
 def extrapolate_line(x1, y1, x2, y2, img_shape):
@@ -45,7 +51,7 @@ def line_intersection(line1, line2):
     """Finds the intersection of two lines if they form an angle close to 90 degrees."""
     angle = calculate_angle(line1, line2)
     
-    if angle is None or (85 <= angle <= 95):
+    if angle is None or (80 <= angle <= 95):
         x1, y1, x2, y2 = line1
         x3, y3, x4, y4 = line2
 
@@ -64,7 +70,7 @@ def line_intersection(line1, line2):
     return None
 
 def detect_intersections(lines, img_shape):
-    """Detects intersections between detected lines."""
+    """Detects intersections between detected lines and draws extrapolated lines and intersections."""
     intersections = []
     extrapolated_lines = [extrapolate_line(*line[0], img_shape) for line in lines]
 
@@ -74,7 +80,22 @@ def detect_intersections(lines, img_shape):
             if intersection is not None:
                 intersections.append(intersection)
 
-    return np.array(intersections)
+    return np.array(intersections), extrapolated_lines
+
+def draw_extrapolated_lines(img, lines):
+    """Draws extrapolated lines on a copy of the image."""
+    img_with_lines = img.copy()
+    for line in lines:
+        x1, y1, x2, y2 = line
+        cv2.line(img_with_lines, (x1, y1), (x2, y2), (0, 255, 0), 2)
+    show_image(img_with_lines)
+
+def draw_intersections(img, intersections):
+    """Draws intersection points on a copy of the image."""
+    img_with_intersections = img.copy()
+    for point in intersections:
+        cv2.circle(img_with_intersections, tuple(point), 5, (0, 0, 255), -1)
+    show_image(img_with_intersections)
 
 def find_extreme_points(intersections):
     """Finds the 4 extreme points of the chessboard using the Convex Hull."""
@@ -118,25 +139,41 @@ def apply_perspective_transform(img, corners):
 
 def process_image(img):
     """Processes the image, detects lines and intersections, and applies perspective transformation."""
-    # Gray scale -> Median blur -> Canny edge detection -> Hough Transform -> Intersections -> Perspective Transform
+    # Step 1: Convert to gray scale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    median_blurred = cv2.medianBlur(gray, 7)
-    edges = cv2.Canny(median_blurred, 30, 120, apertureSize=3, L2gradient=True)
+    show_image(gray)
 
+    # Step 2: Apply median blur
+    median_blurred = cv2.medianBlur(gray, 7)
+    show_image(median_blurred)
+
+    # Step 3: Apply Canny edge detection
+    edges = cv2.Canny(median_blurred, 30, 120, apertureSize=3, L2gradient=True)
+    show_image(edges)
+
+    # Step 4: Dilate edges
     kernel = np.ones((3, 3), np.uint8)
     dilated = cv2.dilate(edges, kernel, iterations=2)
+    show_image(dilated)
 
+    # Step 5: Detect lines with Hough Transform
     lines = cv2.HoughLinesP(dilated, 1, np.pi / 180, threshold=100, minLineLength=200, maxLineGap=20)
     if lines is None:
         raise ValueError("No lines detected in the image.")
 
-    intersections = detect_intersections(lines, img.shape)
-
+    # Step 6: Detect intersections and draw extrapolated lines and intersections
+    intersections, extrapolated_lines = detect_intersections(lines, img.shape)
     if len(intersections) < 4:
         raise ValueError("Less than 4 intersections found. Cannot proceed.")
+    draw_extrapolated_lines(img, extrapolated_lines)
+    draw_intersections(img, intersections)
 
+    # Step 7: Find extreme points using Convex Hull
     rect = find_extreme_points(intersections)
+
+    # Step 8: Apply perspective transform
     warped = apply_perspective_transform(img, rect)
+    show_image(warped)
 
     return warped
 
@@ -148,11 +185,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Line detection in a chessboard image.")
     parser.add_argument("image_path", type=str, help="Path to the chessboard image.")
     parser.add_argument("output_path", type=str, help="Path to save the output image.")
+    parser.add_argument("--show", action="store_true", help="Show intermediate images during processing.")
     args = parser.parse_args()
+
+    show_images = args.show
 
     image_path = args.image_path
     output_path = args.output_path
 
     img = load_image(image_path)
     output = process_image(img)
+    cv2.destroyAllWindows()
     save_image(output, output_path)
