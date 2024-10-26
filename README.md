@@ -31,6 +31,11 @@ After activating the python virtual environment, you can run the script using th
 python3 detect_chessboard.py <IMAGE_NAME> <OUTPUT_PATH>
 ```
 
+You can use the `--show` option to show the image step-by-step:
+```
+python3 detect_chessboard.py <IMAGE_NAME> <OUTPUT_PATH> --show
+```
+
 ### For multiple jpg images
 
 If you want to run the script for many jpg images in a row, you can use the `run_detect_chessboard_for_all.sh` script, which will do it for all jpg images in an input path given as argument and save it in the output path.
